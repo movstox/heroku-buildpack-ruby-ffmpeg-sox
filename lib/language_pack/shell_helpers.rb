@@ -1,5 +1,11 @@
 require "shellwords"
 
+class NoShellEscape < String
+  def shellescape
+    self
+  end
+end
+
 module LanguagePack
   module ShellHelpers
     @@user_env_hash = {}
@@ -62,11 +68,7 @@ module LanguagePack
     # @option options [Hash] :env explicit environment to run command in
     # @option options [Boolean] :user_env whether or not a user's environment variables will be loaded
     def run(command, options = {})
-      options[:out] ||= "2>&1"
-      options[:env] ||= {}
-      options[:env] = user_env_hash.merge(options[:env]) if options[:user_env]
-      env           = options[:env].map {|key, value| "#{key}=\"#{value}\""}.join(" ")
-      %x{ env #{env} bash -c #{command.shellescape} #{options[:out]} }
+      %x{ #{command_options_to_string(command, options)} }
     end
 
     # run a shell command and pipe stderr to /dev/null
@@ -77,15 +79,19 @@ module LanguagePack
       run(command, options)
     end
 
+    def command_options_to_string(command, options)
+      options[:env] ||= {}
+      options[:out] ||= "2>&1"
+      options[:env] = user_env_hash.merge(options[:env]) if options[:user_env]
+      env = options[:env].map {|key, value| "#{key.shellescape}=#{value.shellescape}" }.join(" ")
+      "/usr/bin/env #{env} bash -c #{command.shellescape} #{options[:out]} "
+    end
+
     # run a shell command and stream the output
     # @param [String] command to be run
     def pipe(command, options = {})
       output = ""
-      options[:out] ||= "2>&1"
-      options[:env] ||= {}
-      options[:env] = user_env_hash.merge(options[:env]) if options[:user_env]
-      env = options[:env].map {|key, value| "#{key}=\"#{value}\""}.join(" ")
-      IO.popen("env #{env} #{command} #{options[:out]}") do |io|
+      IO.popen(command_options_to_string(command, options)) do |io|
         until io.eof?
           buffer = io.gets
           output << buffer
@@ -108,7 +114,7 @@ module LanguagePack
     # (indented by 6 spaces)
     # @param [String] message to be displayed
     def puts(message)
-      message.split("\n").each do |line|
+      message.to_s.split("\n").each do |line|
         super "       #{line.strip}"
       end
       $stdout.flush
@@ -116,8 +122,9 @@ module LanguagePack
 
     def warn(message, options = {})
       if options.key?(:inline) ? options[:inline] : false
-        topic "Warning:"
+        Kernel.puts "###### WARNING:"
         puts message
+        Kernel.puts ""
       end
       @warnings ||= []
       @warnings << message
@@ -126,6 +133,10 @@ module LanguagePack
     def deprecate(message)
       @deprecations ||= []
       @deprecations << message
+    end
+
+    def noshellescape(string)
+      NoShellEscape.new(string)
     end
   end
 end
