@@ -19,30 +19,52 @@ end
 
 
 vendor_dir = ARGV[0] + '/vendor'
+bin_dir = vendor_dir + '/bin'
+vendor_dir_running = '/app/vendor'
 
 system('echo "-----> Downloading and setting up 3rd party programs"')
   
+#system('[ -d #{bin_dir} ] || mkdir #{bin_dir}')
+system("mkdir #{bin_dir}")
+
 system('echo "       Downloading and setting up aws."')
 system("cd #{vendor_dir} && curl https://s3.amazonaws.com/wevue-install-files/programs/aws.tar.gz -s -O")
 system("tar zxpf #{vendor_dir}/aws.tar.gz -C #{vendor_dir}")
 system("rm #{vendor_dir}/aws.tar.gz")
+system("ln -s ~/vendor/aws/aws #{bin_dir}/aws")
 
 system('echo "       Downloading and setting up ffmpeg."')
 system("cd #{vendor_dir} && curl https://s3.amazonaws.com/wevue-install-files/programs/ffmpeg.tar.gz -s -O")
 system("tar zxpf #{vendor_dir}/ffmpeg.tar.gz -C #{vendor_dir}")
 system("rm #{vendor_dir}/ffmpeg.tar.gz")
+system("ln -s ~/vendor/ffmpeg/bin/ffmpeg #{bin_dir}/ffmpeg")
+system("ln -s ~/vendor/ffmpeg/bin/ffprobe #{bin_dir}/ffprobe")
 
 system('echo "       Downloading and setting up sox."')
 system("cd #{vendor_dir} && curl https://s3.amazonaws.com/wevue-install-files/programs/sox.tar.gz -s -O")
 system("tar zxpf #{vendor_dir}/sox.tar.gz -C #{vendor_dir}")
 system("rm #{vendor_dir}/sox.tar.gz")
+system("ln -s ~/vendor/sox/bin/sox #{bin_dir}/sox")
+system("ln -s ~/vendor/sox/bin/lame #{bin_dir}/lame")
 
 system('echo "       Downloading and setting up vim."')
 system("cd #{vendor_dir} && curl https://s3.amazonaws.com/wevue-install-files/programs/vim.tar.gz -s -O")
 system("tar zxpf #{vendor_dir}/vim.tar.gz -C #{vendor_dir}")
 system("rm #{vendor_dir}/vim.tar.gz")
+system("ln -s ~/vendor/vim/bin/vim #{bin_dir}/vim")
+
+exiftool_dir = vendor_dir + '/exiftool'
+system('echo "       Downloading and setting up exiftool."')
+system("cd #{vendor_dir} && curl https://s3.amazonaws.com/wevue-install-files/programs/exiftool.tar.gz -s -O")
+system("tar zxpf #{vendor_dir}/exiftool.tar.gz -C #{vendor_dir}")
+system("rm #{vendor_dir}/exiftool.tar.gz")
+system("mv #{exiftool_dir}/exiftool #{exiftool_dir}/exiftool_")
+system("echo '#!/bin/bash\nPERL5LIB=/app/vendor/exiftool/lib #{vendor_dir_running}/exiftool/exiftool_' >> #{exiftool_dir}/exiftool")
+system("chmod u+x #{exiftool_dir}/exiftool")
+system("ln -s ~/vendor/exiftool/exiftool #{bin_dir}/exiftool")
 
 system('echo "       Downloading custom fonts."')
 system("cd #{vendor_dir} && curl https://s3.amazonaws.com/wevue-install-files/fonts/fonts.tar.gz -s -O")
 system("tar zxpf #{vendor_dir}/fonts.tar.gz -C #{vendor_dir}")
 system("rm #{vendor_dir}/fonts.tar.gz")
+
